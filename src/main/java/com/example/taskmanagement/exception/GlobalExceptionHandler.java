@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -122,6 +123,32 @@ public class GlobalExceptionHandler {
             ex.getMessage(),
             request.getRequestURI(),
             null
+        );
+    }
+    
+    @ExceptionHandler(TaskNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleTaskNotFound(
+            TaskNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return errorResponse(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+    }
+    
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request
+    ) {
+        return errorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Invalid value for parameter: " + ex.getName(),
+                request.getRequestURI(),
+                null
         );
     }
 }
