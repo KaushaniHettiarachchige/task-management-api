@@ -363,4 +363,6 @@ Integration tests use an H2 database to avoid modifying the development MySQL da
 
 ## Author
 
-Developed as a Backend Developer Internship Technical Assessment.
+Kaushani Hettiarachchige
+BSc (Hons) in Information Technology specialize in Software Engineering
+SLIIT
