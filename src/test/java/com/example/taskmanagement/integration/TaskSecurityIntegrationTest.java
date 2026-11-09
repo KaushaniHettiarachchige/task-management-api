@@ -80,7 +80,14 @@ class TaskSecurityIntegrationTest {
     void getTasks_withoutJwt_shouldReturn401() throws Exception {
 
         mockMvc.perform(get("/api/tasks"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(
+                        MediaType.APPLICATION_JSON
+                ))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("Unauthorized"))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.path").value("/api/tasks"));
     }
 
     // TEST 2: User A can create own task
