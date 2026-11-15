@@ -13,6 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -23,6 +26,11 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @Operation(
+        summary = "Register a new user",
+        description = "Creates a user account with a BCrypt-hashed password."
+    )
+    @SecurityRequirements
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(
             @Valid @RequestBody RegisterRequest request
@@ -32,6 +40,11 @@ public class AuthController {
                 .body(authService.register(request));
     }
 
+    @Operation (
+        summary = "Login and Receive JWT",
+        description = "Authenticates a registered user and returns a JWT access token."
+    )
+    @SecurityRequirements
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request
