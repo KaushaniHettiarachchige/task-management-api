@@ -19,6 +19,8 @@ The application allows users to register, log in, and manage their own tasks. Ea
 - Consistent JSON error responses
 - Automated unit, controller, and integration tests
 - H2 in-memory database for integration testing
+- Interactive API documentation with Swagger UI and OpenAPI 3
+- JWT Bearer authentication support in Swagger UI
 
 ## Technology Stack
 
@@ -35,6 +37,7 @@ The application allows users to register, log in, and manage their own tasks. Ea
 | H2 | Automated integration testing |
 | Maven Wrapper | Build and dependency management |
 | JUnit 5 / Mockito / MockMvc | Automated testing |
+| Springdoc OpenAPI 3.0.3 | Interactive API documentation and testing |
 
 ## Prerequisites
 
@@ -125,6 +128,62 @@ On macOS/Linux:
 Application base URL:
 
 `http://localhost:8080`
+
+Swagger UI allows developers to explore API endpoints, inspect request and response schemas, and execute HTTP requests directly from a browser.
+
+### Access Swagger UI
+
+Start the Spring boot application:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Open SWagger UI in your browser:
+
+**Swagger UI:** http://localhost:8080/swagger-ui.html
+
+**OpenAPI JSON:** http://localhost:8080/v3/api-docs
+
+### Available API Operations
+
+The documentation includes seven REST API endpoints:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Authenticate and obtain JWT |
+| POST | `/api/tasks` | Create a task |
+| GET | `/api/tasks` | Retrieve authenticated user's tasks |
+| GET | `/api/tasks/{id}` | Retrieve a task by ID |
+| PUT | `/api/tasks/{id}` | Update a task |
+| DELETE | `/api/tasks/{id}` | Delete a task |
+
+### JWT Authentication in Swagger UI
+
+Task management endpoints require JWT authentication.
+
+1. Open Swagger UI.
+2. Execute `POST /api/auth/login` using valid credentials.
+3. Copy the `accessToken` from the response.
+4. Click the **Authorize** button.
+5. Enter the JWT access token without the `Bearer` prefix.
+6. Click **Authorize**.
+7. Execute the protected task endpoints.
+
+Registration and login endpoints are publicly accessible and do not
+require authentication.
+
+### Security
+
+Swagger documentation routes are accessible without authentication
+in the current development configuration.
+
+Task management endpoints remain protected by Spring Security
+and JWT authorization.
+
+For production deployment, restrict or disable public access to
+Swagger UI if required by the deployment environment.
 
 ## API Endpoints
 
@@ -355,7 +414,6 @@ Integration tests use an H2 database to avoid modifying the development MySQL da
 
 - Refresh token support
 - JWT revocation/logout mechanism
-- OpenAPI/Swagger documentation
 - Database migrations with Flyway or Liquibase
 - Task keyword searching and configurable sorting
 - More comprehensive API integration tests
