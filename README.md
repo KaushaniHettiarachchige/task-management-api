@@ -21,6 +21,10 @@ The application allows users to register, log in, and manage their own tasks. Ea
 - H2 in-memory database for integration testing
 - Interactive API documentation with Swagger UI and OpenAPI 3
 - JWT Bearer authentication support in Swagger UI
+- Role-Based Access Control (RABC) with USER and ADMIN roles
+- JWT Authentication with role-based authorization
+- ADMIN-only endpoint to view all users' tasks
+- Secure task ownership restrictions for regular users
 
 ## Technology Stack
 
@@ -159,6 +163,11 @@ The documentation includes seven REST API endpoints:
 | PUT | `/api/tasks/{id}` | Update a task |
 | DELETE | `/api/tasks/{id}` | Delete a task |
 
+Administrative Endpoints
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/admin/tasks` | Retrieve paginated tasks across all registered users |
+
 ### JWT Authentication in Swagger UI
 
 Task management endpoints require JWT authentication.
@@ -196,6 +205,7 @@ Swagger UI if required by the deployment environment.
 | GET | /api/tasks/{id} | JWT required | Get own task |
 | PUT | /api/tasks/{id} | JWT required | Update own task |
 | DELETE | /api/tasks/{id} | JWT required | Delete own task |
+| GET | /api/admin/tasks |ADMIN only | Retrieve paginated tasks across all registered users |
 
 ## API Request Examples
 
@@ -292,6 +302,13 @@ Returns HTTP 200 on success.
 `DELETE /api/tasks/1`
 
 Returns HTTP 204 No Content on success.
+
+### Get Task - ADMIN
+
+```
+GET /api/admin/tasks?page=0&size=10
+Authorization: Bearer <ADMIN_JWT_TOKEN>
+```
 
 ## Security
 
@@ -415,7 +432,6 @@ Integration tests use an H2 database to avoid modifying the development MySQL da
 - Refresh token support
 - JWT revocation/logout mechanism
 - Database migrations with Flyway or Liquibase
-- Task keyword searching and configurable sorting
 - More comprehensive API integration tests
 - Centralized structured logging and monitoring
 

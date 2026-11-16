@@ -3,6 +3,9 @@ package com.example.taskmanagement.config;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
+
+import com.example.taskmanagement.enums.Role;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,11 +14,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -29,8 +38,38 @@ public class SecurityConfig {
     }
 
     @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+
+        JwtAuthenticationConverter converter = 
+            new JwtAuthenticationConverter();
+
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            String roleClaim = jwt.getClaimAsString("role");
+
+            if (roleClaim == null || roleClaim.isBlank()) {
+                return List.of();
+            }
+
+            try {
+                Role role = Role.valueOf(roleClaim);
+
+                return List.of(
+                    new SimpleGrantedAuthority(
+                        "ROLE_" + role.name()
+                    )
+                );
+            } catch (IllegalArgumentException ex) {
+                return List.of();
+            }
+        });
+
+        return converter;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http
+            HttpSecurity http,
+            JwtAuthenticationConverter jwtAuthenticationConverter
     ) throws Exception {
 
         // 401: Missing, expired or invalid authentication
@@ -78,6 +117,9 @@ public class SecurityConfig {
                     "/v3/api-docs",
                     "/v3/api-docs/**"
                 ).permitAll()
+
+                .requestMatchers("/api/admin/**")
+                    .hasRole("ADMIN")
                 
                 .anyRequest().authenticated()
             )
@@ -88,7 +130,11 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .authenticationEntryPoint(authenticationEntryPoint)
                 .accessDeniedHandler(accessDeniedHandler)
-                .jwt(jwt -> {})
+                .jwt(jwt -> jwt
+                    .jwtAuthenticationConverter(
+                        jwtAuthenticationConverter
+                    )
+                )
             );
 
         return http.build();
