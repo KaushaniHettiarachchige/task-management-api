@@ -128,15 +128,6 @@
             },
             "method": "GET",
             "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Complete Backend Assignment\",\r\n  \"description\": \"Develop Spring Boot REST API\",\r\n  \"status\": \"TODO\",\r\n  \"dueDate\": \"2026-11-20\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{baseUrl}}/api/tasks?page=0&size=10",
               "host": [
@@ -175,15 +166,6 @@
             },
             "method": "GET",
             "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Complete Backend Assignment\",\r\n  \"description\": \"Develop Spring Boot REST API\",\r\n  \"status\": \"TODO\",\r\n  \"dueDate\": \"2026-11-20\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
               "host": [
@@ -260,6 +242,160 @@
                 "api",
                 "tasks",
                 "{{taskId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Tasks by Keyword",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?keyword=report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "report"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Tasks by Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?status=TODO",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "TODO"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sort Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?sortBy=dueDate&direction=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "dueDate"
+                },
+                {
+                  "key": "direction",
+                  "value": "asc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Combined Search & Filter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?keyword=report&status=TODO&sortBy=dueDate&direction=asc&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "report"
+                },
+                {
+                  "key": "status",
+                  "value": "TODO"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "dueDate"
+                },
+                {
+                  "key": "direction",
+                  "value": "asc"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin Operations",
+      "item": [
+        {
+          "name": "View All Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/tasks?page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
               ]
             }
           },
