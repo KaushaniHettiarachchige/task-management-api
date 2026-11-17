@@ -19,6 +19,23 @@ The application allows users to register, log in, and manage their own tasks. Ea
 - Consistent JSON error responses
 - Automated unit, controller, and integration tests
 - H2 in-memory database for integration testing
+- Interactive API documentation with Swagger UI and OpenAPI 3
+- JWT Bearer authentication support in Swagger UI
+- Role-Based Access Control (RABC) with USER and ADMIN roles
+- JWT Authentication with role-based authorization
+- ADMIN-only endpoint to view all users' tasks
+- Secure task ownership restrictions for regular users
+- Version-controlled database migrations using Liquibase
+- Automated database schema initialization
+- Existing database schema baselining
+- Database migration history tracking
+- Hibernate schema validation
+- Centralized HTTP request and error logging
+- Request correlation using unique request IDs
+- HTTP method, endpoint, response status, and duration tracking
+- Severity-based INFO, WARN, and ERROR logs
+- Secure logging without request bodies or authentication headers
+- Persistent application logs with automatic file rotation
 
 ## Technology Stack
 
@@ -35,6 +52,7 @@ The application allows users to register, log in, and manage their own tasks. Ea
 | H2 | Automated integration testing |
 | Maven Wrapper | Build and dependency management |
 | JUnit 5 / Mockito / MockMvc | Automated testing |
+| Springdoc OpenAPI 3.0.3 | Interactive API documentation and testing |
 
 ## Prerequisites
 
@@ -126,6 +144,67 @@ Application base URL:
 
 `http://localhost:8080`
 
+Swagger UI allows developers to explore API endpoints, inspect request and response schemas, and execute HTTP requests directly from a browser.
+
+### Access Swagger UI
+
+Start the Spring boot application:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Open SWagger UI in your browser:
+
+**Swagger UI:** http://localhost:8080/swagger-ui.html
+
+**OpenAPI JSON:** http://localhost:8080/v3/api-docs
+
+### Available API Operations
+
+The documentation includes seven REST API endpoints:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Authenticate and obtain JWT |
+| POST | `/api/tasks` | Create a task |
+| GET | `/api/tasks` | Retrieve authenticated user's tasks |
+| GET | `/api/tasks/{id}` | Retrieve a task by ID |
+| PUT | `/api/tasks/{id}` | Update a task |
+| DELETE | `/api/tasks/{id}` | Delete a task |
+
+Administrative Endpoints
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/admin/tasks` | Retrieve paginated tasks across all registered users |
+
+### JWT Authentication in Swagger UI
+
+Task management endpoints require JWT authentication.
+
+1. Open Swagger UI.
+2. Execute `POST /api/auth/login` using valid credentials.
+3. Copy the `accessToken` from the response.
+4. Click the **Authorize** button.
+5. Enter the JWT access token without the `Bearer` prefix.
+6. Click **Authorize**.
+7. Execute the protected task endpoints.
+
+Registration and login endpoints are publicly accessible and do not
+require authentication.
+
+### Security
+
+Swagger documentation routes are accessible without authentication
+in the current development configuration.
+
+Task management endpoints remain protected by Spring Security
+and JWT authorization.
+
+For production deployment, restrict or disable public access to
+Swagger UI if required by the deployment environment.
+
 ## API Endpoints
 
 | Method | Endpoint | Authentication | Description |
@@ -137,6 +216,7 @@ Application base URL:
 | GET | /api/tasks/{id} | JWT required | Get own task |
 | PUT | /api/tasks/{id} | JWT required | Update own task |
 | DELETE | /api/tasks/{id} | JWT required | Delete own task |
+| GET | /api/admin/tasks |ADMIN only | Retrieve paginated tasks across all registered users |
 
 ## API Request Examples
 
@@ -234,6 +314,13 @@ Returns HTTP 200 on success.
 
 Returns HTTP 204 No Content on success.
 
+### Get Task - ADMIN
+
+```
+GET /api/admin/tasks?page=0&size=10
+Authorization: Bearer <ADMIN_JWT_TOKEN>
+```
+
 ## Security
 
 - Passwords are stored as BCrypt hashes, not plaintext.
@@ -317,6 +404,119 @@ Run the full Maven verification lifecycle:
 
 Expected result: BUILD SUCCESS with zero test failures.
 
+## Database Migrations - Liquibase
+
+The application uses Liquibase to manage database schema changes through version-controlled changelog files.
+
+### Migration Files
+
+| Migration | Description |
+|---|---|
+| 001-create-users | Creates the users table and email uniqueness constraint |
+| 002-create-tasks | Creates the tasks table, owner relationship and index |
+| 003-add-user-role | Adds USER/ADMIN role support |
+
+The migration files are located in:
+
+`src/main/resources/db/changelog/`
+
+### Migration Execution
+
+Liquibase executes pending migrations automatically when
+the Spring Boot application starts.
+
+Executed changesets are tracked in the DATABASECHANGELOG
+table to prevent duplicate execution.
+
+### Hibernate Configuration
+
+Hibernate uses:
+
+`spring.jpa.hibernate.ddl-auto=validate`
+
+Liquibase manages schema changes, while Hibernate verifies
+that the schema matches the application's entity mappings.
+
+### Existing Database Integration
+
+The initial migrations contain preconditions to avoid
+recreating existing tables and columns.
+
+Before enabling migrations on an existing database,
+verify schema compatibility and create a database backup.
+
+### Verification
+
+Run automated tests:
+
+```powershell
+.\mvnw.cmd clean verify
+```
+
+
+## Request and Error Logging
+
+The application implements centralized HTTP request and error
+logging using SLF4J, Logback, MDC, and a custom servlet filter.
+
+### Logged Information
+
+Each HTTP request generates a log entry containing:
+
+- HTTP method
+- Request path
+- HTTP response status
+- Request processing duration
+- Unique request ID
+
+### Logging Levels
+
+| Level | Usage |
+|---|---|
+| INFO | Successful HTTP requests (2xx/3xx) |
+| WARN | Client and authorization errors (4xx) |
+| ERROR | Server failures (5xx) |
+
+### Request Correlation
+
+Each request receives a unique identifier returned in the
+`X-Request-ID` response header.
+
+The same identifier is included in application logs to
+support troubleshooting and request tracing.
+
+### Log Storage
+
+Application logs are written to:
+
+`logs/task-management-api.log`
+
+Logs are also displayed in the application console.
+
+Log rotation is configured to limit file size and retention.
+
+### Security
+
+The request logging filter does not record request bodies,
+query strings, passwords, JWT access tokens, or HTTP headers.
+
+Unhandled exceptions are logged server-side for debugging,
+while clients receive a generic JSON error response.
+
+Log files are excluded from Git version control.
+
+### Testing
+
+Execute the automated test suite:
+
+```powershell
+.\mvnw.cmd clean verify
+```
+
+Manual verification can be performed through Swagger UI by
+executing successful, unauthorized, forbidden, and invalid
+requests, then inspecting their corresponding log entries.
+
 ## Design Decisions
 
 ### Layered Architecture
@@ -353,13 +553,10 @@ Integration tests use an H2 database to avoid modifying the development MySQL da
 
 ## Future Improvements
 
-- Refresh token support
+- Refresh token support and secure token rotation
 - JWT revocation/logout mechanism
-- OpenAPI/Swagger documentation
-- Database migrations with Flyway or Liquibase
-- Task keyword searching and configurable sorting
-- More comprehensive API integration tests
-- Centralized structured logging and monitoring
+- Centralized logging aggregation and monitoring dashboards
+- Docker containerization and CI/CD deployment
 
 ## Author
 

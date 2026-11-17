@@ -1,0 +1,24 @@
+
+databaseChangeLog:
+  - changeSet:
+      id: "003-add-user-role"
+      author: "task-management-team"
+
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            - columnExists:
+                tableName: users
+                columnName: role
+
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: role
+                  type: VARCHAR(20)
+                  defaultValue: USER
+                  constraints:
+                    nullable: false

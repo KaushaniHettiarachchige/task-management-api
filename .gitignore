@@ -37,3 +37,8 @@ build/
 !.env.example
 *.log
 .vscode/settings.json
+
+# application logs
+logs/
+*.log
+*.log.gz

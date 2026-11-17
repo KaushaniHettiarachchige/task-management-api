@@ -17,10 +17,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
 
 @Service
 public class TaskService {
@@ -39,9 +42,9 @@ public class TaskService {
     private User getCurrentUser(Jwt jwt) {
         return userRepository.findByEmail(jwt.getSubject())
                 .orElseThrow(() ->
-                    new IllegalStateException(
-                        "Authenticated user no longer exists"
-                    )
+                        new IllegalStateException(
+                                "Authenticated user no longer exists"
+                        )
                 );
     }
 
@@ -49,7 +52,7 @@ public class TaskService {
         return taskRepository
                 .findByIdAndOwnerId(taskId, ownerId)
                 .orElseThrow(() ->
-                    new TaskNotFoundException(taskId)
+                        new TaskNotFoundException(taskId)
                 );
     }
 
@@ -66,7 +69,33 @@ public class TaskService {
         );
     }
 
-    // CREATE TASK
+    private TaskPageResponse toPageResponse(Page<Task> tasks) {
+        return new TaskPageResponse(
+                tasks.getContent()
+                        .stream()
+                        .map(this::toResponse)
+                        .toList(),
+                tasks.getNumber(),
+                tasks.getSize(),
+                tasks.getTotalElements(),
+                tasks.getTotalPages()
+        );
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new IllegalArgumentException(
+                    "Page number must be 0 or greater"
+            );
+        }
+
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException(
+                    "Page size must be between 1 and 100"
+            );
+        }
+    }
+
     @Transactional
     public TaskResponse createTask(
             TaskRequest request,
@@ -87,7 +116,6 @@ public class TaskService {
         return toResponse(savedTask);
     }
 
-    // GET ALL OWN TASKS
     @Transactional(readOnly = true)
     public TaskPageResponse getTasks(
             Jwt jwt,
@@ -95,17 +123,7 @@ public class TaskService {
             int size,
             TaskStatus status
     ) {
-        if (page < 0) {
-            throw new IllegalArgumentException(
-                "Page number must be 0 or greater"
-            );
-        }
-
-        if (size < 1 || size > 100) {
-            throw new IllegalArgumentException(
-                "Page size must be between 1 and 100"
-            );
-        }
+        validatePagination(page, size);
 
         User user = getCurrentUser(jwt);
 
@@ -113,12 +131,14 @@ public class TaskService {
                 page,
                 size,
                 Sort.by(
-                    Sort.Direction.DESC,
-                    "createdAt"
-                ).and(Sort.by(
-                    Sort.Direction.DESC,
-                    "id"
-                ))
+                        Sort.Direction.DESC,
+                        "createdAt"
+                ).and(
+                        Sort.by(
+                                Sort.Direction.DESC,
+                                "id"
+                        )
+                )
         );
 
         Page<Task> tasks;
@@ -136,19 +156,120 @@ public class TaskService {
             );
         }
 
-        return new TaskPageResponse(
-                tasks.getContent()
-                        .stream()
-                        .map(this::toResponse)
-                        .toList(),
-                tasks.getNumber(),
-                tasks.getSize(),
-                tasks.getTotalElements(),
-                tasks.getTotalPages()
-        );
+        return toPageResponse(tasks);
     }
 
-    // GET TASK BY ID
+    @Transactional(readOnly = true)
+    public TaskPageResponse getTasks(
+            Jwt jwt,
+            int page,
+            int size,
+            TaskStatus status,
+            String keyword,
+            String sortBy,
+            String direction
+    ) {
+        validatePagination(page, size);
+
+        User user = getCurrentUser(jwt);
+
+        String sortField;
+
+        if (sortBy == null || sortBy.isBlank()
+                || sortBy.equalsIgnoreCase("createdAt")) {
+            sortField = "createdAt";
+
+        } else if (sortBy.equalsIgnoreCase("dueDate")) {
+            sortField = "dueDate";
+
+        } else {
+            throw new IllegalArgumentException(
+                    "sortBy must be createdAt or dueDate"
+            );
+        }
+
+        String normalizedDirection =
+                direction == null || direction.isBlank()
+                        ? "desc"
+                        : direction.trim().toLowerCase(Locale.ROOT);
+
+        Sort.Direction sortDirection;
+
+        if (normalizedDirection.equals("asc")) {
+            sortDirection = Sort.Direction.ASC;
+
+        } else if (normalizedDirection.equals("desc")) {
+            sortDirection = Sort.Direction.DESC;
+
+        } else {
+            throw new IllegalArgumentException(
+                    "direction must be asc or desc"
+            );
+        }
+
+        Sort sort = Sort.by(sortDirection, sortField)
+                .and(Sort.by(sortDirection, "id"));
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                sort
+        );
+
+        Specification<Task> specification =
+                (root, query, cb) ->
+                        cb.equal(
+                                root.get("owner").get("id"),
+                                user.getId()
+                        );
+
+        if (status != null) {
+            specification = specification.and(
+                    (root, query, cb) ->
+                            cb.equal(
+                                    root.get("status"),
+                                    status
+                            )
+            );
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+
+            String searchText = keyword.trim()
+                    .toLowerCase(Locale.ROOT);
+
+            String escapedText = searchText
+                    .replace("\\", "\\\\")
+                    .replace("%", "\\%")
+                    .replace("_", "\\_");
+
+            String searchPattern = "%" + escapedText + "%";
+
+            specification = specification.and(
+                    (root, query, cb) ->
+                            cb.or(
+                                    cb.like(
+                                            cb.lower(root.get("title")),
+                                            searchPattern,
+                                            '\\'
+                                    ),
+                                    cb.like(
+                                            cb.lower(root.get("description")),
+                                            searchPattern,
+                                            '\\'
+                                    )
+                            )
+            );
+        }
+
+        Page<Task> tasks = taskRepository.findAll(
+                specification,
+                pageable
+        );
+
+        return toPageResponse(tasks);
+    }
+
     @Transactional(readOnly = true)
     public TaskResponse getTaskById(
             Long taskId,
@@ -164,7 +285,6 @@ public class TaskService {
         return toResponse(task);
     }
 
-    // UPDATE TASK
     @Transactional
     public TaskResponse updateTask(
             Long taskId,
@@ -190,7 +310,6 @@ public class TaskService {
         return toResponse(task);
     }
 
-    // DELETE TASK
     @Transactional
     public void deleteTask(
             Long taskId,
