@@ -25,6 +25,11 @@ The application allows users to register, log in, and manage their own tasks. Ea
 - JWT Authentication with role-based authorization
 - ADMIN-only endpoint to view all users' tasks
 - Secure task ownership restrictions for regular users
+- Version-controlled database migrations using Liquibase
+- Automated database schema initialization
+- Existing database schema baselining
+- Database migration history tracking
+- Hibernate schema validation
 
 ## Technology Stack
 
@@ -393,6 +398,55 @@ Run the full Maven verification lifecycle:
 
 Expected result: BUILD SUCCESS with zero test failures.
 
+## Database Migrations - Liquibase
+
+The application uses Liquibase to manage database schema changes through version-controlled changelog files.
+
+### Migration Files
+
+| Migration | Description |
+|---|---|
+| 001-create-users | Creates the users table and email uniqueness constraint |
+| 002-create-tasks | Creates the tasks table, owner relationship and index |
+| 003-add-user-role | Adds USER/ADMIN role support |
+
+The migration files are located in:
+
+`src/main/resources/db/changelog/`
+
+### Migration Execution
+
+Liquibase executes pending migrations automatically when
+the Spring Boot application starts.
+
+Executed changesets are tracked in the DATABASECHANGELOG
+table to prevent duplicate execution.
+
+### Hibernate Configuration
+
+Hibernate uses:
+
+`spring.jpa.hibernate.ddl-auto=validate`
+
+Liquibase manages schema changes, while Hibernate verifies
+that the schema matches the application's entity mappings.
+
+### Existing Database Integration
+
+The initial migrations contain preconditions to avoid
+recreating existing tables and columns.
+
+Before enabling migrations on an existing database,
+verify schema compatibility and create a database backup.
+
+### Verification
+
+Run automated tests:
+
+```powershell
+.\mvnw.cmd clean verify
+```
+
 ## Design Decisions
 
 ### Layered Architecture
@@ -431,7 +485,6 @@ Integration tests use an H2 database to avoid modifying the development MySQL da
 
 - Refresh token support
 - JWT revocation/logout mechanism
-- Database migrations with Flyway or Liquibase
 - More comprehensive API integration tests
 - Centralized structured logging and monitoring
 
