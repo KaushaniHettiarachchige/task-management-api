@@ -30,6 +30,12 @@ The application allows users to register, log in, and manage their own tasks. Ea
 - Existing database schema baselining
 - Database migration history tracking
 - Hibernate schema validation
+- Centralized HTTP request and error logging
+- Request correlation using unique request IDs
+- HTTP method, endpoint, response status, and duration tracking
+- Severity-based INFO, WARN, and ERROR logs
+- Secure logging without request bodies or authentication headers
+- Persistent application logs with automatic file rotation
 
 ## Technology Stack
 
@@ -447,6 +453,70 @@ Run automated tests:
 .\mvnw.cmd clean verify
 ```
 
+
+## Request and Error Logging
+
+The application implements centralized HTTP request and error
+logging using SLF4J, Logback, MDC, and a custom servlet filter.
+
+### Logged Information
+
+Each HTTP request generates a log entry containing:
+
+- HTTP method
+- Request path
+- HTTP response status
+- Request processing duration
+- Unique request ID
+
+### Logging Levels
+
+| Level | Usage |
+|---|---|
+| INFO | Successful HTTP requests (2xx/3xx) |
+| WARN | Client and authorization errors (4xx) |
+| ERROR | Server failures (5xx) |
+
+### Request Correlation
+
+Each request receives a unique identifier returned in the
+`X-Request-ID` response header.
+
+The same identifier is included in application logs to
+support troubleshooting and request tracing.
+
+### Log Storage
+
+Application logs are written to:
+
+`logs/task-management-api.log`
+
+Logs are also displayed in the application console.
+
+Log rotation is configured to limit file size and retention.
+
+### Security
+
+The request logging filter does not record request bodies,
+query strings, passwords, JWT access tokens, or HTTP headers.
+
+Unhandled exceptions are logged server-side for debugging,
+while clients receive a generic JSON error response.
+
+Log files are excluded from Git version control.
+
+### Testing
+
+Execute the automated test suite:
+
+```powershell
+.\mvnw.cmd clean verify
+```
+
+Manual verification can be performed through Swagger UI by
+executing successful, unauthorized, forbidden, and invalid
+requests, then inspecting their corresponding log entries.
+
 ## Design Decisions
 
 ### Layered Architecture
@@ -483,10 +553,10 @@ Integration tests use an H2 database to avoid modifying the development MySQL da
 
 ## Future Improvements
 
-- Refresh token support
+- Refresh token support and secure token rotation
 - JWT revocation/logout mechanism
-- More comprehensive API integration tests
-- Centralized structured logging and monitoring
+- Centralized logging aggregation and monitoring dashboards
+- Docker containerization and CI/CD deployment
 
 ## Author
 
