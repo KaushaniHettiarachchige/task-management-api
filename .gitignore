@@ -32,9 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 
-.env
-.env.*
-!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 *.log
 .vscode/settings.json
 
@@ -42,3 +42,7 @@ build/
 logs/
 *.log
 *.log.gz
+
+# Frontend
+**/node_modules/
+**/dist/
